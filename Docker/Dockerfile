@@ -1,14 +1,12 @@
 
 FROM python:3.12.3
-FROM tensorflow/tensorflow:2.18.0
-
 
 WORKDIR /app
 
 COPY . /app
 
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --ignore-installed -r requirements.txt
 
 EXPOSE 5000
 
