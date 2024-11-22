@@ -7,7 +7,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Load the trained model
-loaded_model = load_model("cnn_presence_model.keras", compile=false)
+loaded_model = load_model("cnn_presence_model.keras", compile=False)
 loaded_model.compile(optimizer='adam', 
               loss='binary_crossentropy', 
               metrics=['accuracy'])
