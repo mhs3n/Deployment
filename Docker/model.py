@@ -1,13 +1,14 @@
-from flask import Flask, request, jsonify
 import pandas as pd
-from tensorflow.keras.models import load_model
-from datetime import timedelta, datetime
+import numpy as np
 import os
+from flask import Flask, request, jsonify
+import xgboost as xgb
+from datetime import timedelta, datetime
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-# Load the trained model
-loaded_model = load_model("cnn_presence_model.keras")
+# Load the XGBoost model
+model_path = "xgb_model.json"  # Replace with your saved model's path
+xgboost_model = xgb.XGBClassifier()
+xgboost_model.load_model(model_path)
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -72,18 +73,16 @@ def predict_absenteeism(input_datetime, model):
     features_df = pd.DataFrame([features])
 
     # Run prediction
-    prediction = model.predict(features_df, verbose=0)
-
-    # Extract probabilities
-    probability_present = float(prediction[0][0])
-    probability_absent = 1 - probability_present
+    prediction = model.predict_proba(features_df)  # Get probabilities
+    probability_present = prediction[0][1]  # Assuming label 1 is 'present'
+    probability_absent = prediction[0][0]  # Assuming label 0 is 'absent'
 
     # Format output
     return {
         "date": str(date),
         "probabilities": {
-            "present": round(probability_present, 2),
-            "absent": round(probability_absent, 2)
+            "present": str(probability_present),
+            "absent": str(probability_absent)
         }
     }
 
@@ -106,7 +105,7 @@ def predict():
             return jsonify({"error": "Invalid input. Provide 'datetime' in format 'YYYY-MM-DD HH:MM:SS'"}), 400
 
         # Predict absenteeism
-        result = predict_absenteeism(input_datetime, loaded_model)
+        result = predict_absenteeism(input_datetime, xgboost_model)
         return jsonify(result)
 
     except Exception as e:
