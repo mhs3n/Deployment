@@ -1,16 +1,38 @@
+import tensorflow as tf
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Conv1D, Flatten, Dense, MaxPooling1D
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+import os
+import numpy as np
 from flask import Flask, request, jsonify
 import pandas as pd
 from tensorflow.keras.models import load_model
 from datetime import timedelta, datetime
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import csv
+dataset_path = os.path.join('Docker\Dataset.csv')
+result_df = pd.read_csv(dataset_path)
 
-# Load the trained model
-loaded_model = load_model("cnn_presence_model.keras", compile=False)
-loaded_model.compile(optimizer='adam', 
+X = result_df[['DayOfWeek', 'DayOfMonth', 'WeekOfMonth', 'Month']].values
+y = result_df['Presence']
+X = X.reshape((X.shape[0], X.shape[1], 1))
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = Sequential()
+model.add(Conv1D(64, kernel_size=2, activation='relu', input_shape=(X_train.shape[1], 1)))
+model.add(MaxPooling1D(pool_size=2))
+model.add(Flatten())
+model.add(Dense(64, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer='adam', 
               loss='binary_crossentropy', 
               metrics=['accuracy'])
+history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print(f'Test accuracy: {test_accuracy * 100:.2f}%')
+loaded_model = model
 
 # Initialize the Flask app
 app = Flask(__name__)
